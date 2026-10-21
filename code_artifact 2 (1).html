@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>私の性癖クイズ〜</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap');
+    body {
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+    }
+    .pop-in {
+      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.85); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-pink-100 via-purple-100 to-indigo-100 min-h-screen flex items-center justify-center p-4 text-gray-800">
+
+  <div class="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border-4 border-pink-300 w-full max-w-xl p-6 sm:p-8 relative overflow-hidden">
+    
+    <!-- 背景アクセントアイコン -->
+    <div class="absolute -top-6 -right-6 text-pink-200/60 text-8xl pointer-events-none select-none">
+      <i class="fa-solid fa-heart"></i>
+    </div>
+    <div class="absolute -bottom-6 -left-6 text-purple-200/60 text-8xl pointer-events-none select-none">
+      <i class="fa-solid fa-sparkles"></i>
+    </div>
+
+    <!-- スタート画面 -->
+    <div id="start-screen" class="text-center py-6 relative z-10 space-y-6">
+      <div class="inline-block bg-pink-500 text-white font-extrabold text-sm px-4 py-1 rounded-full shadow-md uppercase tracking-wider">
+        Quiz Game
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-extrabold text-pink-600 drop-shadow-sm">
+        私の性癖クイズ〜
+      </h1>
+      <p class="text-gray-600 text-sm sm:text-base leading-relaxed">
+        選択肢はふたつ！<br>
+        <span class="text-pink-600 font-bold">1つ選択</span>でも<span class="text-purple-600 font-bold">2つ両方選択</span>でもOK！<br>
+        私の好みをどれだけ理解しているかチャレンジしてね！
+      </p>
+
+      <!-- 名前のカスタマイズ（任意） -->
+      <div class="bg-pink-50/80 p-4 rounded-2xl border border-pink-200 text-left space-y-2">
+        <label for="creator-name" class="text-xs font-bold text-gray-600 flex items-center gap-1">
+          <i class="fa-solid fa-user-pen text-pink-500"></i> 出題者の名前（結果画面で使われます）
+        </label>
+        <input type="text" id="creator-name" value="私" placeholder="例: 私, 〇〇ちゃん" class="w-full px-4 py-2 rounded-xl border border-pink-300 focus:ring-2 focus:ring-pink-400 focus:outline-none font-bold text-gray-700 bg-white">
+      </div>
+
+      <div class="pt-2">
+        <button id="start-btn" class="w-full py-4 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-bold text-xl rounded-2xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200">
+          クイズを始める！ <i class="fa-solid fa-play ml-2"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- クイズ画面 -->
+    <div id="quiz-screen" class="hidden relative z-10 space-y-5">
+      <!-- プログレスバー & ヘッダー -->
+      <div class="space-y-2">
+        <div class="flex justify-between text-xs font-bold text-gray-500">
+          <span id="question-number">第 1 問 / 全 5 問</span>
+          <span id="score-counter">理解度: 0%</span>
+        </div>
+        <div class="w-full bg-gray-200 h-3 rounded-full overflow-hidden">
+          <div id="progress-bar" class="bg-gradient-to-r from-pink-400 to-purple-500 h-full w-0 transition-all duration-300"></div>
+        </div>
+      </div>
+
+      <!-- 問題文 -->
+      <div class="bg-pink-50/90 border-2 border-pink-200 p-5 rounded-2xl shadow-inner relative">
+        <span class="absolute -top-3 left-4 bg-purple-500 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow">
+          複数選択可！
+        </span>
+        <h2 id="question-text" class="text-lg sm:text-xl font-bold text-gray-800 leading-snug pt-1">
+          <!-- 問題がここに入る -->
+        </h2>
+      </div>
+
+      <!-- 選択肢リスト（常に2つ） -->
+      <div id="options-container" class="space-y-3">
+        <!-- JSで選択肢ボタンを動的生成 -->
+      </div>
+
+      <!-- 決定ボタン（解答前） -->
+      <div id="submit-action-area" class="pt-2">
+        <button id="submit-btn" class="w-full py-3.5 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-bold text-lg rounded-xl shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed">
+          これで決定！ <i class="fa-solid fa-check ml-1"></i>
+        </button>
+      </div>
+
+      <!-- 解説／回答フィードバックエリア -->
+      <div id="feedback-area" class="hidden pop-in space-y-4 pt-1">
+        <div id="feedback-box" class="p-4 rounded-2xl border-2 text-center font-bold">
+          <div id="result-status" class="text-xl mb-1"></div>
+          <div id="answer-comment" class="text-sm sm:text-base font-semibold text-gray-700 bg-white/80 p-3 rounded-xl mt-2 border border-pink-100 shadow-sm"></div>
+        </div>
+        <button id="next-btn" class="w-full py-3.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-lg rounded-xl shadow-md transition">
+          次へ進む <i class="fa-solid fa-arrow-right ml-2"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- リザルト画面 -->
+    <div id="result-screen" class="hidden text-center py-6 relative z-10 space-y-6 pop-in">
+      <div class="text-pink-500 text-6xl">
+        <i class="fa-solid fa-heart-circle-check"></i>
+      </div>
+      
+      <div class="space-y-1">
+        <h2 class="text-2xl font-extrabold text-gray-700">結果発表！</h2>
+        <div id="understanding-title" class="text-xl font-bold text-purple-600">
+          <!-- 〇〇への理解度 -->
+        </div>
+      </div>
+      
+      <!-- 理解度パーセンテージカード -->
+      <div class="bg-gradient-to-b from-pink-50 to-purple-50 border-2 border-pink-200 rounded-3xl p-6 shadow-inner space-y-3">
+        <div class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600 drop-shadow-sm">
+          <span id="percentage-score">0</span>%
+        </div>
+        <div class="text-sm font-bold text-gray-600 flex justify-center gap-3">
+          <span>完全正解: <span id="perfect-score" class="text-green-600 font-extrabold">0</span> 問</span>
+          <span>|</span>
+          <span>片方正解(△): <span id="partial-score" class="text-yellow-600 font-extrabold">0</span> 問</span>
+        </div>
+        <p id="result-message" class="text-sm font-bold text-gray-700 pt-2 border-t border-pink-200/60 leading-relaxed"></p>
+      </div>
+
+      <button id="restart-btn" class="w-full py-4 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-bold text-lg rounded-2xl shadow-lg hover:shadow-xl transition">
+        もう一度挑戦する <i class="fa-solid fa-rotate-right ml-2"></i>
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    const quizData = [
+      {
+        question: "第一問：私の好きな体の部位は？",
+        options: [
+          { value: 1, text: "1. 細い又は普通の腕の太さからのデカめのおてて" },
+          { value: 2, text: "2. 黒い靴下を履いてデカめの黒スニーカーを履いてる足" }
+        ],
+        correctValues: [1, 2],
+        comment: "A.どっちも好きだよ。"
+      },
+      {
+        question: "第二問：私の好きな設定は",
+        options: [
+          { value: 1, text: "1. 圧倒的幼馴染" },
+          { value: 2, text: "2. 圧倒的歳の差" }
+        ],
+        correctValues: [1, 2],
+        comment: "A.万国共通でどっちも好きだろ。"
+      },
+      {
+        question: "第三問：私の好きな属性",
+        options: [
+          { value: 1, text: "1. 正統派文武両道圧倒的包容力" },
+          { value: 2, text: "2. ツンデレ常時ツンケンのデレ時の破壊力" }
+        ],
+        correctValues: [2],
+        comment: "A.あたりめえにツンデレ"
+      },
+      {
+        question: "第四問：私の好きな顔は",
+        options: [
+          { value: 1, text: "1. ニヒルな微笑（ほほえみ）" },
+          { value: 2, text: "て　れ　が　お" }
+        ],
+        correctValues: [2],
+        comment: "A.みんな大好き照れ顔"
+      },
+      {
+        question: "第五問：私の好きな組み合わせのタイプ",
+        options: [
+          { value: 1, text: "1. 包容力×ツンデレ" },
+          { value: 2, text: "2. 陽×陰" }
+        ],
+        correctValues: [1],
+        comment: "A.さっき言ったろ俺はツンデレが好きだ"
+      },
+      {
+        question: "第６問：私が保護したいという使命感に駆られるのはどっち",
+        options: [
+          { value: 1, text: "1. 泣いてるﾌｫﾝﾅ" },
+          { value: 2, text: "2. 満面の笑みにこにこ笑顔" }
+        ],
+        correctValues: [1],
+        comment: "A.そんなの、保護だぞ？泣いてる方だろ。今穂波が泣いてんだｱｱｱｱｱｱｱｱｱ"
+      }
+    ];
+
+    let currentQuestionIndex = 0;
+    let earnedPoints = 0;      // 獲得ポイント
+    let earnedPercentage = 0;  // 獲得パーセンテージ（100%満点）
+    let perfectCount = 0;      // 完全正解数
+    let partialCount = 0;      // 三角（片方正解）数
+    let selectedValues = [];
+    let creatorName = "私";
+
+    // DOM要素の取得
+    const startScreen = document.getElementById('start-screen');
+    const quizScreen = document.getElementById('quiz-screen');
+    const resultScreen = document.getElementById('result-screen');
+    const creatorNameInput = document.getElementById('creator-name');
+    
+    const startBtn = document.getElementById('start-btn');
+    const submitBtn = document.getElementById('submit-btn');
+    const submitActionArea = document.getElementById('submit-action-area');
+    const nextBtn = document.getElementById('next-btn');
+    const restartBtn = document.getElementById('restart-btn');
+
+    const questionNumberEl = document.getElementById('question-number');
+    const scoreCounterEl = document.getElementById('score-counter');
+    const progressBar = document.getElementById('progress-bar');
+    const questionTextEl = document.getElementById('question-text');
+    const optionsContainer = document.getElementById('options-container');
+
+    const feedbackArea = document.getElementById('feedback-area');
+    const feedbackBox = document.getElementById('feedback-box');
+    const resultStatusEl = document.getElementById('result-status');
+    const answerCommentEl = document.getElementById('answer-comment');
+
+    const understandingTitleEl = document.getElementById('understanding-title');
+    const percentageScoreEl = document.getElementById('percentage-score');
+    const perfectScoreEl = document.getElementById('perfect-score');
+    const partialScoreEl = document.getElementById('partial-score');
+    const resultMessageEl = document.getElementById('result-message');
+
+    // イベントリスナー設定
+    startBtn.addEventListener('click', startQuiz);
+    submitBtn.addEventListener('click', checkAnswer);
+    nextBtn.addEventListener('click', handleNextQuestion);
+    restartBtn.addEventListener('click', startQuiz);
+
+    function startQuiz() {
+      currentQuestionIndex = 0;
+      earnedPoints = 0;
+      earnedPercentage = 0;
+      perfectCount = 0;
+      partialCount = 0;
+      creatorName = creatorNameInput.value.trim() || "私";
+      
+      startScreen.classList.add('hidden');
+      resultScreen.classList.add('hidden');
+      quizScreen.classList.remove('hidden');
+      
+      showQuestion();
+    }
+
+    function showQuestion() {
+      selectedValues = [];
+      const currentQuiz = quizData[currentQuestionIndex];
+
+      // UIの更新
+      questionNumberEl.textContent = `第 ${currentQuestionIndex + 1} 問 / 全 ${quizData.length} 問`;
+      scoreCounterEl.textContent = `理解度: ${earnedPercentage}%`;
+      progressBar.style.width = `${((currentQuestionIndex + 1) / quizData.length) * 100}%`;
+      questionTextEl.textContent = currentQuiz.question;
+
+      // エリアの切り替え
+      feedbackArea.classList.add('hidden');
+      submitActionArea.classList.remove('hidden');
+      
+      updateSubmitButtonState();
+
+      // 選択肢のレンダリング
+      optionsContainer.innerHTML = '';
+      currentQuiz.options.forEach((opt) => {
+        const btn = document.createElement('button');
+        btn.dataset.value = opt.value;
+        btn.className = "option-btn w-full text-left p-4 rounded-2xl border-2 border-gray-200 bg-white hover:border-pink-300 font-bold text-gray-700 transition shadow-sm flex items-center justify-between";
+        btn.innerHTML = `
+          <span class="text-sm sm:text-base leading-snug">${opt.text}</span>
+          <div class="checkbox-icon w-6 h-6 rounded-lg border-2 border-gray-300 flex items-center justify-center text-white text-xs transition">
+            <i class="fa-solid fa-check opacity-0"></i>
+          </div>
+        `;
+        btn.addEventListener('click', () => toggleOption(opt.value, btn));
+        optionsContainer.appendChild(btn);
+      });
+    }
+
+    function toggleOption(value, btn) {
+      const index = selectedValues.indexOf(value);
+      const icon = btn.querySelector('.checkbox-icon');
+      const checkMark = icon.querySelector('i');
+
+      if (index === -1) {
+        selectedValues.push(value);
+        btn.classList.remove('border-gray-200', 'bg-white');
+        btn.classList.add('border-pink-500', 'bg-pink-50/80', 'shadow-md');
+        icon.classList.remove('border-gray-300');
+        icon.classList.add('bg-pink-500', 'border-pink-500');
+        checkMark.classList.remove('opacity-0');
+      } else {
+        selectedValues.splice(index, 1);
+        btn.classList.remove('border-pink-500', 'bg-pink-50/80', 'shadow-md');
+        btn.classList.add('border-gray-200', 'bg-white');
+        icon.classList.remove('bg-pink-500', 'border-pink-500');
+        icon.classList.add('border-gray-300');
+        checkMark.classList.add('opacity-0');
+      }
+
+      updateSubmitButtonState();
+    }
+
+    function updateSubmitButtonState() {
+      if (selectedValues.length === 0) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `選択してください <i class="fa-solid fa-hand-pointer ml-1"></i>`;
+      } else {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `これで確定する（${selectedValues.length}個選択中） <i class="fa-solid fa-check ml-1"></i>`;
+      }
+    }
+
+    function checkAnswer() {
+      const currentQuiz = quizData[currentQuestionIndex];
+      
+      const sortedUser = [...selectedValues].sort((a, b) => a - b);
+      const sortedCorrect = [...currentQuiz.correctValues].sort((a, b) => a - b);
+      
+      // 完全一致（〇）
+      const isPerfect = JSON.stringify(sortedUser) === JSON.stringify(sortedCorrect);
+      
+      // 三角（△）：正解が2つの問題で、1つだけ選んでおり、その選択肢が正解に含まれる場合
+      const isPartial = !isPerfect && 
+                        currentQuiz.correctValues.length === 2 && 
+                        selectedValues.length === 1 && 
+                        currentQuiz.correctValues.includes(selectedValues[0]);
+
+      // ボタンの操作を無効化し、正誤表示
+      const optionButtons = optionsContainer.querySelectorAll('.option-btn');
+      optionButtons.forEach(btn => {
+        btn.disabled = true;
+        const val = parseInt(btn.dataset.value, 10);
+        const icon = btn.querySelector('.checkbox-icon');
+
+        if (currentQuiz.correctValues.includes(val)) {
+          btn.classList.remove('border-gray-200', 'bg-white');
+          btn.classList.add('border-green-500', 'bg-green-50', 'text-green-900');
+          icon.classList.remove('border-gray-300');
+          icon.classList.add('bg-green-500', 'border-green-500');
+          icon.querySelector('i').classList.remove('opacity-0');
+        } else if (selectedValues.includes(val)) {
+          btn.classList.remove('border-pink-500', 'bg-pink-50/80');
+          btn.classList.add('border-red-400', 'bg-red-50', 'text-red-800');
+          icon.classList.remove('bg-pink-500', 'border-pink-500');
+          icon.classList.add('bg-red-400', 'border-red-400');
+        }
+      });
+
+      submitActionArea.classList.add('hidden');
+
+      // 結果とポイントの処理（全問の最高得点を 120pt として計算）
+      const maxTotalPoints = quizData.length * 20;
+
+      if (isPerfect) {
+        earnedPoints += 20;
+        perfectCount++;
+        earnedPercentage = Math.min(100, Math.round((earnedPoints / maxTotalPoints) * 100));
+        scoreCounterEl.textContent = `理解度: ${earnedPercentage}%`;
+        feedbackBox.className = "p-4 rounded-2xl border-2 text-center font-bold border-green-400 bg-green-50";
+        resultStatusEl.innerHTML = `<span class="text-green-600"><i class="fa-solid fa-circle-check"></i> 大正解！（理解度 UP！）</span>`;
+        
+        confetti({
+          particleCount: 35,
+          spread: 55,
+          origin: { y: 0.7 }
+        });
+      } else if (isPartial) {
+        earnedPoints += 6; // 120pt中6pt = 精確に5%分加算
+        partialCount++;
+        earnedPercentage = Math.min(100, Math.round((earnedPoints / maxTotalPoints) * 100));
+        scoreCounterEl.textContent = `理解度: ${earnedPercentage}%`;
+        feedbackBox.className = "p-4 rounded-2xl border-2 text-center font-bold border-yellow-400 bg-yellow-50";
+        resultStatusEl.innerHTML = `<span class="text-yellow-600"><i class="fa-solid fa-triangle-exclamation"></i> 惜しい！片方正解（理解度 +5%）</span>`;
+      } else {
+        scoreCounterEl.textContent = `理解度: ${earnedPercentage}%`;
+        feedbackBox.className = "p-4 rounded-2xl border-2 text-center font-bold border-pink-300 bg-pink-50";
+        resultStatusEl.innerHTML = `<span class="text-pink-600"><i class="fa-solid fa-circle-xmark"></i> 残念！答えは...</span>`;
+      }
+
+      answerCommentEl.textContent = currentQuiz.comment;
+      feedbackArea.classList.remove('hidden');
+    }
+
+    function handleNextQuestion() {
+      currentQuestionIndex++;
+      if (currentQuestionIndex < quizData.length) {
+        showQuestion();
+      } else {
+        showResult();
+      }
+    }
+
+    function showResult() {
+      quizScreen.classList.add('hidden');
+      resultScreen.classList.remove('hidden');
+
+      understandingTitleEl.textContent = `【${creatorName}】への理解度`;
+      percentageScoreEl.textContent = earnedPercentage;
+      perfectScoreEl.textContent = perfectCount;
+      partialScoreEl.textContent = partialCount;
+
+      // 理解度に応じたメッセージ
+      if (earnedPercentage === 100) {
+        resultMessageEl.innerHTML = `すごい！理解度<span class="text-pink-600 font-bold">100%</span>！<br>私の好みや癖（へき）を完全に熟知した真のプロフェッショナルです✨`;
+        confetti({
+          particleCount: 120,
+          spread: 90,
+          origin: { y: 0.6 }
+        });
+      } else if (earnedPercentage >= 70) {
+        resultMessageEl.innerHTML = `かなり理解度高め！<span class="text-purple-600 font-bold">${earnedPercentage}%</span>！<br>かなり私の好みを理解してくれてますね！あと少しでコンプリート！`;
+      } else if (earnedPercentage >= 40) {
+        resultMessageEl.innerHTML = `理解度<span class="text-purple-600 font-bold">${earnedPercentage}%</span>！<br>まあまあ分かってくれてる！もう一回やって100%を目指してみてね！`;
+      } else {
+        resultMessageEl.innerHTML = `理解度<span class="text-pink-600 font-bold">${earnedPercentage}%</span>...<br>まだまだ私の修業が足りないみたい！？もう一度チャレンジしてみよう！`;
+      }
+    }
+  </script>
+</body>
+</html>
